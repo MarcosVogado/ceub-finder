@@ -3,7 +3,6 @@ package com.example.ceubfinder.ui.screens.publico
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -24,17 +23,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.ceubfinder.data.database.CeubDatabaseHelper
-import com.example.ceubfinder.data.model.Categoria
 import com.example.ceubfinder.data.model.Objeto
 import com.example.ceubfinder.ui.components.ObjetoCard
-import com.example.ceubfinder.ui.components.StatusBadge
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IncioScreen(
     dbHelper: CeubDatabaseHelper,
-    onNavigateToSearch: (String?) -> Unit,
+    onNavigateToSearch: (String?, Long?) -> Unit,
     onNavigateToDetail: (Long) -> Unit,
     onNavigateToInfo: () -> Unit,
     onNavigateToLogin: () -> Unit
@@ -102,7 +99,7 @@ fun IncioScreen(
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         Button(
-                            onClick = { onNavigateToSearch(searchQuery) },
+                            onClick = { onNavigateToSearch(searchQuery.ifBlank { null }, null) },
                             modifier = Modifier.padding(end = 4.dp)
                         ) {
                             Text("Buscar")
@@ -114,7 +111,7 @@ fun IncioScreen(
                 )
             }
 
-            // Categories Shortcut
+            // Categories Shortcut (with working filter)
             item {
                 Text(
                     text = "Categorias",
@@ -128,7 +125,7 @@ fun IncioScreen(
                     items(categorias) { categoria ->
                         FilterChip(
                             selected = false,
-                            onClick = { onNavigateToSearch(null) }, // Can pass category filter
+                            onClick = { onNavigateToSearch(null, categoria.id) },
                             label = { Text(categoria.nome) }
                         )
                     }
@@ -147,7 +144,7 @@ fun IncioScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    TextButton(onClick = { onNavigateToSearch(null) }) {
+                    TextButton(onClick = { onNavigateToSearch(null, null) }) {
                         Text("Ver todos")
                     }
                 }
@@ -196,11 +193,12 @@ fun IncioScreen(
 fun BuscarScreen(
     dbHelper: CeubDatabaseHelper,
     initialQuery: String?,
+    initialCategoryId: Long?,
     onNavigateToDetail: (Long) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf(initialQuery ?: "") }
     val categorias = remember { dbHelper.getAllCategorias() }
-    var selectedCategoriaId by remember { mutableStateOf<Long?>(null) }
+    var selectedCategoriaId by remember { mutableStateOf<Long?>(initialCategoryId) }
     var localFilter by remember { mutableStateOf("") }
 
     val objetos = remember(searchQuery, selectedCategoriaId, localFilter) {
@@ -370,7 +368,7 @@ fun DetalheObjetoScreen(
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
-                        StatusBadge(status = objeto.status)
+                        com.example.ceubfinder.ui.components.StatusBadge(status = objeto.status)
                     }
                 }
 
@@ -391,7 +389,7 @@ fun DetalheObjetoScreen(
                                 DetailRow(label = "Ponto de referência", value = objeto.pontoReferencia)
                             }
                             if (!objeto.detalhesLocal.isNullOrBlank()) {
-                                DetailRow(label = "Detalhes", value = objeto.detalhesLocal)
+                                DetailRow(label = "Detalhes do local", value = objeto.detalhesLocal)
                             }
                             DetailRow(label = "Data encontrado", value = objeto.dataEncontrado)
                             DetailRow(label = "Data de cadastro", value = objeto.dataCadastro)
@@ -453,7 +451,7 @@ fun DetalheObjetoScreen(
                             Button(
                                 onClick = {
                                     val intent = Intent(Intent.ACTION_DIAL).apply {
-                                        data = Uri.parse("tel:6139661234") // Number identified as demonstrative
+                                        data = Uri.parse("tel:6139661234")
                                     }
                                     context.startActivity(intent)
                                 },
@@ -519,7 +517,7 @@ fun InformacoesScreen(onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    text = "Como funciona o CEUB Finder?",
+                    text = "How funciona o CEUB Finder?",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )

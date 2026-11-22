@@ -50,8 +50,11 @@ fun CeubFinderAppNavHost() {
         composable("inicio") {
             IncioScreen(
                 dbHelper = dbHelper,
-                onNavigateToSearch = { query ->
-                    val route = if (!query.isNullOrBlank()) "buscar?query=$query" else "buscar"
+                onNavigateToSearch = { query, categoryId ->
+                    val qParam = if (!query.isNullOrBlank()) "query=$query" else ""
+                    val cParam = if (categoryId != null && categoryId > 0L) "categoryId=$categoryId" else ""
+                    val params = listOf(qParam, cParam).filter { it.isNotBlank() }.joinToString("&")
+                    val route = if (params.isNotBlank()) "buscar?$params" else "buscar"
                     navController.navigate(route)
                 },
                 onNavigateToDetail = { objetoId ->
@@ -67,17 +70,26 @@ fun CeubFinderAppNavHost() {
         }
 
         composable(
-            route = "buscar?query={query}",
-            arguments = listOf(navArgument("query") {
-                type = NavType.StringType
-                nullable = true
-                defaultValue = null
-            })
+            route = "buscar?query={query}&categoryId={categoryId}",
+            arguments = listOf(
+                navArgument("query") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument("categoryId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                }
+            )
         ) { backStackEntry ->
             val query = backStackEntry.arguments?.getString("query")
+            val catIdArg = backStackEntry.arguments?.getLong("categoryId") ?: -1L
+            val categoryId = if (catIdArg != -1L) catIdArg else null
             BuscarScreen(
                 dbHelper = dbHelper,
                 initialQuery = query,
+                initialCategoryId = categoryId,
                 onNavigateToDetail = { objetoId ->
                     navController.navigate("detalhe/$objetoId")
                 }
