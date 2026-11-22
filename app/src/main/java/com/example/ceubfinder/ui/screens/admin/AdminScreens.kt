@@ -2,6 +2,7 @@ package com.example.ceubfinder.ui.screens.admin
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,7 +23,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.ceubfinder.data.database.CeubDatabaseHelper
-import com.example.ceubfinder.data.model.Objeto
 import com.example.ceubfinder.util.FileUtils
 import java.io.File
 
@@ -146,7 +146,8 @@ fun DashboardAdmScreen(
     onNavigateToHistorico: () -> Unit,
     onLogout: () -> Unit
 ) {
-    val todosObjetos = remember { dbHelper.getAllObjetosAdmin() }
+    // Re-fetch objects fresh on every composition to ensure dashboard indicators reflect actual SQLite state
+    val todosObjetos = dbHelper.getAllObjetosAdmin()
     val disponiveisCount = todosObjetos.count { it.status == "DISPONIVEL" }
     val devolvidosCount = todosObjetos.count { it.status == "DEVOLVIDO" }
     val totalCount = todosObjetos.size
@@ -305,8 +306,9 @@ fun CadastroObjetoScreen(
         }
     }
 
+    // Android Photo Picker using PickVisualMedia
     val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
             val path = FileUtils.copyUriToInternalStorage(context, uri)
@@ -365,7 +367,11 @@ fun CadastroObjetoScreen(
                         }
                     }
 
-                    OutlinedButton(onClick = { photoPickerLauncher.launch("image/*") }) {
+                    OutlinedButton(onClick = {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }) {
                         Text(if (fotoPath == null) "Selecionar Foto da Galeria" else "Alterar Foto")
                     }
                 }
@@ -382,7 +388,7 @@ fun CadastroObjetoScreen(
                 )
             }
 
-            // Category selector dropdown / chips
+            // Category selector chips
             item {
                 Text(text = "Categoria *", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
@@ -424,6 +430,17 @@ fun CadastroObjetoScreen(
 
             item {
                 OutlinedTextField(
+                    value = detalhesLocal,
+                    onValueChange = { detalhesLocal = it },
+                    label = { Text("Detalhes do local (opcional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    maxLines = 2
+                )
+            }
+
+            item {
+                OutlinedTextField(
                     value = dataEncontrado,
                     onValueChange = { dataEncontrado = it },
                     label = { Text("Data em que foi encontrado * (ex: 2026-05-15)") },
@@ -453,8 +470,12 @@ fun CadastroObjetoScreen(
             item {
                 Button(
                     onClick = {
+                        // Date validation: check if non-blank and basic length/format
+                        val dateValid = dataEncontrado.isNotBlank() && dataEncontrado.length >= 8
                         if (nome.isBlank() || localEspecifico.isBlank() || dataEncontrado.isBlank()) {
                             errorMessage = "Preencha todos os campos obrigatórios (*)."
+                        } else if (!dateValid) {
+                            errorMessage = "Informe uma data válida (ex: 2026-05-15)."
                         } else {
                             if (objetoIdToEdit == null) {
                                 dbHelper.insertObjeto(
@@ -596,7 +617,6 @@ fun GerenciamentoScreen(
         }
     }
 
-    // Devolver Dialog
     if (showDevolverDialog != null) {
         AlertDialog(
             onDismissRequest = { showDevolverDialog = null },
@@ -619,7 +639,6 @@ fun GerenciamentoScreen(
         )
     }
 
-    // Delete Dialog
     if (showDeleteDialog != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = null },
