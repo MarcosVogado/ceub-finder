@@ -74,9 +74,7 @@ class CeubDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_OBJETOS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_CATEGORIAS")
-        onCreate(db)
+        // Safe upgrade strategy: preserve data across versions without dropping tables
     }
 
     override fun onOpen(db: SQLiteDatabase) {
