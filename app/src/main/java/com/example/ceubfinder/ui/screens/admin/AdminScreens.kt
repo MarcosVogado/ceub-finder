@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -173,7 +174,7 @@ fun DashboardAdmScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item {
                 Text(
@@ -339,7 +340,7 @@ fun CadastroObjetoScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item {
                 // Photo selection
@@ -392,11 +393,10 @@ fun CadastroObjetoScreen(
             item {
                 Text(text = "Categoria *", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
+                LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    categorias.forEach { cat ->
+                    items(categorias) { cat ->
                         FilterChip(
                             selected = selectedCategoriaId == cat.id,
                             onClick = { selectedCategoriaId = cat.id },
@@ -522,14 +522,15 @@ fun GerenciamentoScreen(
     onBack: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) } // 0: Disponíveis, 1: Devolvidos
+    var refreshKey by remember { mutableStateOf(0) }
+
     val statusFilter = if (selectedTab == 0) "DISPONIVEL" else "DEVOLVIDO"
-    var objetos by remember { mutableStateOf(dbHelper.getAllObjetosAdmin(statusFilter)) }
+    val objetos = remember(selectedTab, refreshKey) {
+        dbHelper.getAllObjetosAdmin(statusFilter)
+    }
+
     var showDeleteDialog by remember { mutableStateOf<Long?>(null) }
     var showDevolverDialog by remember { mutableStateOf<Long?>(null) }
-
-    fun reload() {
-        objetos = dbHelper.getAllObjetosAdmin(statusFilter)
-    }
 
     Scaffold(
         topBar = {
@@ -557,12 +558,12 @@ fun GerenciamentoScreen(
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(
                     selected = selectedTab == 0,
-                    onClick = { selectedTab = 0; reload() },
+                    onClick = { selectedTab = 0 },
                     text = { Text("Disponíveis") }
                 )
                 Tab(
                     selected = selectedTab == 1,
-                    onClick = { selectedTab = 1; reload() },
+                    onClick = { selectedTab = 1 },
                     text = { Text("Devolvidos") }
                 )
             }
@@ -626,7 +627,7 @@ fun GerenciamentoScreen(
                 TextButton(onClick = {
                     dbHelper.marcarComoDevolvido(showDevolverDialog!!)
                     showDevolverDialog = null
-                    reload()
+                    refreshKey++
                 }) {
                     Text("Confirmar")
                 }
@@ -648,7 +649,7 @@ fun GerenciamentoScreen(
                 TextButton(onClick = {
                     dbHelper.excluirObjeto(showDeleteDialog!!)
                     showDeleteDialog = null
-                    reload()
+                    refreshKey++
                 }) {
                     Text("Excluir", color = MaterialTheme.colorScheme.error)
                 }
