@@ -9,7 +9,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -45,6 +47,9 @@ fun IncioScreen(
             TopAppBar(
                 title = { Text("CEUB Finder", fontWeight = FontWeight.Bold) },
                 actions = {
+                    IconButton(onClick = onNavigateToLogin) {
+                        Icon(Icons.Default.Lock, contentDescription = "Área do Funcionário")
+                    }
                     IconButton(onClick = onNavigateToInfo) {
                         Icon(Icons.Default.Info, contentDescription = "Informações")
                     }
@@ -194,7 +199,8 @@ fun BuscarScreen(
     dbHelper: CeubDatabaseHelper,
     initialQuery: String?,
     initialCategoryId: Long?,
-    onNavigateToDetail: (Long) -> Unit
+    onNavigateToDetail: (Long) -> Unit,
+    onBack: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf(initialQuery ?: "") }
     val categorias = remember { dbHelper.getAllCategorias() }
@@ -213,6 +219,11 @@ fun BuscarScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Buscar Objetos Perdidos") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer

@@ -92,7 +92,8 @@ fun CeubFinderAppNavHost() {
                 initialCategoryId = categoryId,
                 onNavigateToDetail = { objetoId ->
                     navController.navigate("detalhe/$objetoId")
-                }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
